@@ -1,0 +1,49 @@
+{
+  "project": {
+    "name": "示例工程",
+    "work_dir": "work/示例工程",
+    "title_2d": "示例工程 · 2D 线路走向图",
+    "title_viewer": "示例工程 · 3D 看图台"
+  },
+  "coords": {
+    "system": "CGCS2000",
+    "cm_deg": 113.1666667,
+    "station_min_m": 0.0,
+    "station_max_m": 3000.0,
+    "step_m": 20.0
+  },
+  "geometry_file": "模型/project_geometry.json",
+  "base": {
+    "provider": "bing",
+    "zoom": 18,
+    "lat_pad_m": 250.0,
+    "lon_pad_m": 200.0,
+    "min_tile_bytes": 2200
+  },
+  "base_file": "底图/base_bing_z18.png",
+  "base_meta": "底图/base_bing_z18.json",
+  "map2d_file": "输出/2D线路走向图.png",
+  "map2d": {
+    "spans": [
+      {"name": "路线", "station0_m": 0.0, "station1_m": 3000.0, "color": "#8b9098", "width_px": 7}
+    ],
+    "labels": [
+      {"text": "起点", "station_m": 0.0, "color": "#3fae5a"},
+      {"text": "终点", "station_m": 3000.0, "color": "#3fae5a"}
+    ],
+    "minor_every_m": 500
+  },
+  "viewer": {
+    "2d_embed": true,
+    "show_km_markers": true,
+    "extra_note": ""
+  },
+  "views": ["panorama", "bridge"],
+  "images_for_overview": [
+    "2D线路走向图.png",
+    "方案A-panorama.png"
+  ],
+  "keys": {
+    "tianditu": "请填入天地图Key，或留空"
+  }
+}
