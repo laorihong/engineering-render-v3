@@ -1,0 +1,4 @@
+interface:
+  display_name: "工程效果图制作"
+  short_description: "从图纸与坐标生成带真实底图的2D走向图和3D工程效果图"
+  default_prompt: "Use $engineering-render 根据新项目施工图与逐桩坐标，生成全景/全线3D效果图与2D路线走向图"
