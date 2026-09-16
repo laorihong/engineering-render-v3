@@ -1,0 +1,8 @@
+.git
+.gitignore
+__pycache__
+*.pyc
+work/_jobs
+work/**/输出
+work/**/底图
+.env

@@ -1,0 +1,243 @@
+openapi: 3.0.3
+info:
+  title: 工程效果图渲染服务（engineering-render-v3）
+  version: 1.0.0
+  description: >-
+    把施工图/坐标表生成"卫星底图 + 参数化模型 + 交互看图台"成果。
+    长任务请用 /v1/jobs 创建作业后轮询，避免平台工具超时。
+servers:
+  - url: http://内网服务器IP:8000
+    description: 内网部署地址（按实际修改）
+security:
+  - ApiKeyAuth: []
+paths:
+  /healthz:
+    get:
+      operationId: healthz
+      summary: 健康检查（依赖、Chrome、版本）
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  version: { type: string }
+                  chrome: { type: string, nullable: true }
+  /v1/preflight:
+    post:
+      operationId: preflight
+      summary: 环境体检
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                network: { type: boolean, default: false }
+      responses:
+        "200":
+          description: 体检结果
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exit: { type: integer }
+                  output: { type: string }
+  /v1/v3/run:
+    post:
+      operationId: runStep
+      summary: 同步执行单个步骤（map2d/kml/viewer 等快步骤）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [project_dir, step]
+              properties:
+                project_dir:
+                  type: string
+                  description: 项目目录（必须位于服务端 PROJECTS_ROOT 之下）
+                step:
+                  type: string
+                  enum: [fetch-base, map2d, viewer, render, overview, kml]
+                timeout_s: { type: integer, default: 600 }
+      responses:
+        "200":
+          description: 执行结果
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exit: { type: integer }
+                  output: { type: string }
+                  artifacts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name: { type: string }
+                        size: { type: integer }
+  /v1/jobs:
+    post:
+      operationId: createJob
+      summary: 创建渲染作业（异步，推荐）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [project_dir]
+              properties:
+                project_dir: { type: string, description: 项目目录 }
+                steps:
+                  type: array
+                  description: 步骤序列，默认全流程
+                  items:
+                    type: string
+                    enum: [fetch-base, map2d, viewer, render, overview, kml]
+                timeout_s: { type: integer, default: 3600 }
+                note: { type: string, description: 备注（项目名/申请人） }
+      responses:
+        "200":
+          description: 作业信息
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+                  status: { type: string, description: queued/running/succeeded/failed }
+                  project_dir: { type: string }
+                  steps:
+                    type: array
+                    items: { type: string }
+    get:
+      operationId: listJobs
+      summary: 作业列表
+      responses:
+        "200":
+          description: 作业列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: string }
+                    status: { type: string }
+  /v1/jobs/{job_id}:
+    get:
+      operationId: getJob
+      summary: 查询作业状态
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: 作业详情
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+                  status: { type: string }
+                  error: { type: string }
+                  artifacts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name: { type: string }
+                        size: { type: integer }
+  /v1/jobs/{job_id}/log:
+    get:
+      operationId: getJobLog
+      summary: 查看执行日志
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: tail
+          in: query
+          required: false
+          schema: { type: integer, default: 200 }
+      responses:
+        "200":
+          description: 日志
+  /v1/jobs/{job_id}/zip:
+    get:
+      operationId: downloadJobZip
+      summary: 下载成果包（输出目录压缩）
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: ZIP 文件
+          content:
+            application/zip:
+              schema: { type: string, format: binary }
+  /v1/upload:
+    post:
+      operationId: uploadFile
+      summary: 上传图纸/坐标表
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: 服务端保存路径
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  path: { type: string }
+                  size: { type: integer }
+  /v1/geo:
+    post:
+      operationId: tableToGeometry
+      summary: 逐桩坐标表 → 几何 JSON
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [table, cm_deg]
+              properties:
+                table: { type: string, description: csv/json（station_m,X,Y） }
+                cm_deg: { type: number, description: 中央子午线经度 }
+                out: { type: string, default: 模型/project_geometry.json }
+                project_dir: { type: string }
+      responses:
+        "200":
+          description: 结果
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key

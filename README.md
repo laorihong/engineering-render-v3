@@ -78,3 +78,17 @@ python v3.py -c work/myproj/config.json map2d viewer render overview kml
 - 复杂 2D 标注（分幅、挡墙、涵洞点位）：项目级在 `map2d.py` 基础上扩展，或让 AI 生成项目专用绘制脚本；
 - 高保真渲染：可外挂 Blender（`blender -b -P xxx.py`）替代 headless Chrome；
 - 分段长线路：把 `route` 按分段切为多份 geometry，各段各跑一遍 viewer/render。
+
+## 六、对外服务（MaxKB / Dify 工具接入）
+
+仓库自带 HTTP 服务骨架，把本流水线变成平台可调用的「工具」，供同事在问答界面提交项目并下载成果包：
+
+```bash
+docker compose up -d --build          # 内网服务器一键起服务（含 Chromium + 中文字体）
+curl http://IP:8000/healthz           # 健康检查
+```
+
+- 接口：`POST /v1/jobs`（异步作业）→ `GET /v1/jobs/{id}`（进度）→ `GET /v1/jobs/{id}/zip`（成果包）；另有 `/v1/upload`、`/v1/geo`、`/v1/extract`、`/v1/docx` 等快捷接口；
+- 安全：只允许白名单步骤、路径限制在 `PROJECTS_ROOT` 内、可选 `SERVICE_API_KEY` 鉴权；
+- 平台接入：`service/openapi.yaml` 可直接导入 MaxKB 创建工具，详细步骤见 `service/README.md`；
+- 升级路线：如需模型自主选工具，可在服务外再包 MCP Server（SSE/Streamable HTTP），在 MaxKB【工具 → 创建 MCP】中登记。

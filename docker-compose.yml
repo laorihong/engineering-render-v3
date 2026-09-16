@@ -1,0 +1,17 @@
+services:
+  engineering-render:
+    build: .
+    image: engineering-render-v3:latest
+    container_name: engineering-render-v3
+    ports:
+      - "8000:8000"
+    environment:
+      - SERVICE_API_KEY=${SERVICE_API_KEY:-change-me-please}
+      - PROJECTS_ROOT=/app/work
+      - JOBS_DIR=/app/work/_jobs
+      - MAX_WORKERS=${MAX_WORKERS:-2}
+      - CHROME_PATH=/usr/bin/chromium
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./work:/app/work
+    restart: unless-stopped
